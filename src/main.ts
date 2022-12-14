@@ -1,35 +1,28 @@
-/**
- * Some predefined delay values (in milliseconds).
- */
-export enum Delays {
-    Short = 500,
-    Medium = 2000,
-    Long = 5000,
-}
+import { Configuration, OpenAIApi } from "openai";
 
-/**
- * Returns a Promise<string> that resolves after a given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - A number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-    name: string,
-    delay: number = Delays.Medium,
-): Promise<string> {
-    return new Promise((resolve: (value?: string) => void) =>
-        setTimeout(() => resolve(`Hello, ${name}`), delay),
-    );
-}
+import { config } from "../config.js";
 
-// Please see the comment in the .eslintrc.json file about the suppressed rule!
-// Below is an example of how to use ESLint errors suppression. You can read more
-// at https://eslint.org/docs/latest/user-guide/configuring/rules#disabling-rules
+const configuration = new Configuration({
+  apiKey: config.openAiApi,
+});
+const openai = new OpenAIApi(configuration);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export async function greeter(name: any) {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
-    // The name parameter should be of type string. Any is used only to trigger the rule.
-    return await delayedHello(name, Delays.Long);
+const textResponse = await openai.createCompletion({
+    model: "text-davinci-001",
+    prompt: "Write description of a picture on the theme forest.\n",
+    temperature: 0.4,
+    max_tokens: 240,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    n: 10
+});
+
+for(let i = 0; i < textResponse.data.choices.length; ++i) {
+    const text = textResponse.data.choices[i].text;
+    const imageResponse = await openai.createImage({
+        prompt: text,
+    });
+
+    console.log("Text:",text, "\nImage: ", imageResponse.data.data[0].url, "\n");
 }
